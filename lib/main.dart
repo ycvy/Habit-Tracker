@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/habit.dart';
+import 'models/habit.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
 }
 
@@ -22,7 +23,7 @@ class MyApp extends StatelessWidget {
 }
 
 class HabitProvider with ChangeNotifier {
-  final List<Habit> _habits = [];
+  List<Habit> _habits = [];
 
   List<Habit> get habits => _habits;
 
@@ -46,9 +47,8 @@ class HabitProvider with ChangeNotifier {
 }
 
 class HabitListScreen extends StatelessWidget {
-  HabitListScreen({super.key});
-
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   Widget build(BuildContext context) {
@@ -73,12 +73,15 @@ class HabitListScreen extends StatelessWidget {
                         ),
                       ),
                       subtitle: Text('Durchführungen: ${habit.count}'),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          habitProvider.removeHabit(index);
-                        },
-                      ),
+                      trailing: habit.isCompleted
+                          ? null
+                          : IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () {
+                                print("Remove button pressed for habit: ${habit.name}");
+                                habitProvider.removeHabit(index);
+                              },
+                            ),
                       onTap: () {
                         habitProvider.toggleHabit(index);
                       },
@@ -95,7 +98,16 @@ class HabitListScreen extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    focusNode: _focusNode,
                     decoration: InputDecoration(labelText: 'Neues Habit'),
+                    onSubmitted: (value) {
+                      if (value.isNotEmpty) {
+                        Provider.of<HabitProvider>(context, listen: false)
+                            .addHabit(value);
+                        _controller.clear();
+                        _focusNode.requestFocus();
+                      }
+                    },
                   ),
                 ),
                 IconButton(
@@ -105,6 +117,7 @@ class HabitListScreen extends StatelessWidget {
                       Provider.of<HabitProvider>(context, listen: false)
                           .addHabit(_controller.text);
                       _controller.clear();
+                      _focusNode.requestFocus();
                     }
                   },
                 ),
